@@ -1,4 +1,5 @@
 # 🎓 AI-Powered Smart Education Automation System
+<img width="1721" height="764" alt="image" src="https://github.com/user-attachments/assets/f2153f82-828b-4689-8d0c-7ead1f7c7163" />
 
 An end-to-end AI-driven automation system designed to simplify school operations by generating exam papers and sending daily student updates to parents.
 
