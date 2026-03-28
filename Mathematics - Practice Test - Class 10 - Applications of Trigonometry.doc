@@ -1,0 +1,130 @@
+
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      margin: 0.7cm;
+      font-size: 11pt;
+      line-height: 1.1;
+      color: #000;
+    }
+    h1, h2 {
+      text-align: center;
+      margin: 0.1cm 0;
+    }
+    h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; }
+    h2 { font-size: 12pt; font-weight: bold; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.2cm 0;
+      font-size: 10.5pt;
+    }
+    td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      vertical-align: top;
+      width: 50%;
+    }
+    td b { display: inline-block; width: 40%; }
+
+    .divider {
+      border-top: 1px solid #000;
+      margin: 0.15cm 0;
+    }
+    .qp-title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 12pt;
+      margin: 0.1cm 0;
+      letter-spacing: 0.3px;
+    }
+    .section-title {
+      font-weight: bold;
+      margin: 0.08cm 0;
+      text-decoration: underline;
+    }
+    ol { padding-left: 0.6cm; margin: 0; }
+    p { margin: 0.03cm 0; }
+
+    /* Single A4 page control */
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>USHODAYA SCHOOL </h1>
+  <h2>AP SCERT</h2>
+
+  <table>
+    <tr>
+      <td><b>Class:</b> 10</td>
+      <td><b>Chapter:</b> Applications of Trigonometry</td>
+    </tr>
+    <tr>
+      <td><b>Subject:</b> Mathematics</td>
+      <td><b>Exam Type:</b> Practice Test</td>
+    </tr>
+    <tr>
+      <td><b>Maximum Marks:</b> 30</td>
+      <td><b>Duration:</b> 60 minutes</td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+  <div class="qp-title">QUESTION PAPER</div>
+  <div class="divider"></div>
+
+  
+<html>
+<head>
+  <style>
+    body { font-family: 'Times New Roman', serif; line-height: 1.6; font-size: 12pt; }
+    h1, h2 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    td { padding: 4px; vertical-align: top; }
+    .instructions { margin: 10px 0; }
+    .section { margin: 15px 0; }
+    .section-title { font-weight: bold; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  
+
+  
+
+  <div class="instructions">
+    <b>Instructions:</b>
+    <ol>
+      <li>Answer all questions.</li><li>Write neatly and legibly.</li><li>Use a blue or black pen only.</li>
+    </ol>
+  </div>
+
+  
+    <div class="section">
+      <p class="section-title">PART A → 1 Mark Questions (16 Questions = 16 Marks)</p>
+      <p>1. Define angle of elevation.</p><p>2. What is the angle of depression?</p><p>3. A tower is 50m high. What is the angle of elevation of its top from a point 50m away from its foot?</p><p>4. Write the formula relating height and distance with angle of elevation.</p><p>5. If the angle of elevation of a ladder leaning against a wall is 60° and the foot of the ladder is 4.6 m away from the wall, what is the length of the ladder?</p><p>6. What is the line of sight?</p><p>7. The angle of elevation of the top of a tower from a point on the ground, which is 30 m away from the foot of the tower, is 30°. Find the height of the tower.</p><p>8. A pole casts a shadow of length 2√3 m on the ground, when the sun’s elevation is 60°. Find the height of the pole.</p><p>9. If the height of a vertical pole is equal to the length of its shadow on the ground, what is the angle of elevation of the sun?</p><p>10. What is the relationship between angle of elevation and angle of depression when observed from the same point?</p><p>11. A kite is flying at a height of 60 m above the ground. The string attached to the kite makes an angle of 60° with the ground. Find the length of the string.</p><p>12. From a point on the ground, the angle of elevation of the bottom and top of a transmission tower fixed at the top of a 20 m high building are 45° and 60° respectively. Find the height of the tower.</p><p>13. What are trigonometric ratios?</p><p>14. Write the value of tan 45°.</p><p>15. Write the value of sin 30°.</p><p>16. Write the value of cos 60°.</p>
+    </div>
+  
+    <div class="section">
+      <p class="section-title">PART B → 2 Marks Questions (3 Questions = 6 Marks)</p>
+      <p>1. From the top of a cliff 20 m high, the angle of depression of a boat is 60°. Find the distance of the boat from the foot of the cliff.</p><p>2. A ladder leaning against a wall makes an angle of 60° with the ground. If the foot of the ladder is 2.5 m away from the wall, find the length of the ladder and the height of the point on the wall where the ladder touches.</p><p>3. Two poles of heights 6 m and 11 m stand vertically on a plane ground. If the distance between their feet is 12 m, find the distance between their tops.</p>
+    </div>
+  
+    <div class="section">
+      <p class="section-title">PART C → 4 Marks Questions (2 Questions = 8 Marks)</p>
+      <p>1. From the top of a 7 m building, the angle of elevation of the top of a cable tower is 60° and the angle of depression of its foot is 45°. Determine the height of the tower.</p><p>2. An aeroplane is flying at a height of 300 m above the ground. Flying at this height, the angles of depression from the aeroplane of two points on both banks of a river are 45° and 30° respectively. Find the width of the river.</p>
+    </div>
+  
+</body>
+</html>
+
+
+</body>
+</html>
