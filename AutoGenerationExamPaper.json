@@ -1,0 +1,553 @@
+{
+  "name": "AutoGenerationExamPaper",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-generator",
+        "options": {}
+      },
+      "id": "c7fbf4c2-bf70-4603-b433-d8a623cf421b",
+      "name": "Form Submission Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        48,
+        80
+      ],
+      "webhookId": "e40e7de0-8d20-432e-a408-7b343db5e056"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract form data and validate\nconst formData = $json.body;\n\n// Required fields\nconst required = [\n  'board',\n  'class',\n  'subject',\n  'chapter',\n  // 'exam_type',\n  // 'total_marks',\n  // 'duration'\n];\n\nconst missing = required.filter(field => !formData[field]);\n\nif (missing.length > 0) {\n  throw new Error(`Missing required fields: ${missing.join(', ')}`);\n}\n\n// Map full subject names to abbreviations\nconst subjectMap = {\n    \"Physical Science\": \"PS\",\n    \"Biological Science\": \"Bio\",\n    \"Social Studies\": \"SS\",\n    \"Mathematics\": \"Maths\",\n    \"Telugu\": \"Telugu\",\n    \"Hindi\": \"Hindi\",\n    \"English\": \"English\"\n};\n\n// Pick abbreviation if exists\nconst subjectAbbrev = subjectMap[formData.subject.trim()] || formData.subject.trim();\n\n// Construct Board_Class_Subject_Chapter\nconst boardClassSubjectChapter = `${formData.board.trim()}_${formData.class}_${subjectAbbrev}_${formData.chapter.trim()}`;\n\n// Clean and structure output\nreturn {\n  json: {\n    board: formData.board.trim(),\n    class: parseInt(formData.class),\n    subject: formData.subject.trim(),\n    subject_abbrev: subjectAbbrev,           // added for reference\n    chapter: formData.chapter.trim(),\n    board_class_subject_chapter: boardClassSubjectChapter, // dynamic filter\n    exam_type: formData.exam_type.trim(),\n    total_marks: parseInt(formData.total_marks),\n    duration: parseInt(formData.duration),\n    language: formData.language || 'English',\n    teacher_email: formData.teacher_email,\n    teacher_whatsapp: formData.teacher_whatsapp,\n    school_name: formData.school_name || 'Unknown School',\n    timestamp: new Date().toISOString(),\n    request_id: 'REQ_' + Date.now()\n  }\n};\n"
+      },
+      "id": "562e0b4d-bb3c-49be-a64a-cab9407a25a3",
+      "name": "Extract & Validate Form Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1E1aU3K3a2e_q0iOgwNVZ9IVB6nChJqEJidVTNXoAP20/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Syllabus_DB",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Subject",
+              "lookupValue": "={{ $json.subject }}"
+            },
+            {
+              "lookupColumn": "Chapter",
+              "lookupValue": "={{ $json.chapter }}"
+            },
+            {
+              "lookupColumn": "Board",
+              "lookupValue": "={{ $json.board }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        496,
+        80
+      ],
+      "id": "799b294e-fd85-4579-9f38-6f2faeae9ad8",
+      "name": "Lookup Chapter Syllabus",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1E1aU3K3a2e_q0iOgwNVZ9IVB6nChJqEJidVTNXoAP20/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Marks_Pattern",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Board",
+              "lookupValue": "={{$node[\"Extract & Validate Form Data\"].json.board}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        720,
+        80
+      ],
+      "id": "b7e6b2c3-4793-436e-91e4-f3f237096a83",
+      "name": "Get Board Marks Pattern",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Inputs\nconst exam = $node[\"Extract & Validate Form Data\"].json;\nconst boardPattern = $node[\"Get Board Marks Pattern\"].json;\nconst syllabus = $node[\"Lookup Chapter Syllabus\"].json;\n\n// Parse marks pattern like \"1:40,2:20,4:30,8:10\"\nlet pattern = {};\nif (boardPattern && boardPattern.Marks_Distribution) {\n  boardPattern.Marks_Distribution.split(',').forEach(part => {\n    const [marks, perc] = part.split(':');\n    pattern[parseInt(marks)] = parseInt(perc);\n  });\n}\n\n// default if nothing found\nif (Object.keys(pattern).length === 0) {\n  pattern = {1:40, 2:30, 4:20, 8:10};\n}\n\n// Calculate question count per mark\nconst dist = {};\nlet remaining = exam.total_marks;\n\nfor (const [marks, perc] of Object.entries(pattern)) {\n  const marksTotal = Math.floor(exam.total_marks * (perc/100));\n  const qCount = Math.floor(marksTotal / parseInt(marks));\n  if (qCount > 0) {\n    dist[marks] = {\n      questions: qCount,\n      total_marks: qCount * parseInt(marks)\n    };\n    remaining -= dist[marks].total_marks;\n  }\n}\n\n// allocate any leftover marks to the smallest mark value\nif (remaining > 0) {\n  const minMarks = Math.min(...Object.keys(pattern).map(Number));\n  if (!dist[minMarks]) dist[minMarks] = { questions: 0, total_marks: 0 };\n  const extraQs = Math.floor(remaining / minMarks);\n  dist[minMarks].questions += extraQs;\n  dist[minMarks].total_marks += extraQs * minMarks;\n  remaining -= extraQs * minMarks;\n}\n\n// Topics and outcomes\nconst topics = syllabus && syllabus.Topics\n  ? syllabus.Topics.split(',').map(t => t.trim())\n  : [exam.chapter];\n\nreturn [{\n  json: {\n    exam,\n    syllabus: {\n      topics,\n      outcomes: syllabus?.Learning_Outcomes || '',\n      difficulty: syllabus?.Difficulty_Levels || 'easy:40,medium:40,hard:20'\n    },\n    distribution: dist\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        80
+      ],
+      "id": "7a72e02b-551b-47c2-b9c7-da4defdd1271",
+      "name": "Code (Calculate Question Distribution)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyAQ-An8W8O6kVpPZnmmvR-NCe67H-f5mKg",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are an expert exam paper generator for Indian school boards.\\n\\nBased on the following input details, generate ONLY a JSON output in the specified schema (no explanations, no extra text).\\n\\nInput:\\nBoard: {{$json.exam.board}}\\nClass: {{$json.exam.class}}\\nSubject: {{$json.exam.subject}}\\nChapter: {{$json.exam.chapter}}\\nSchool: {{$json.exam.school_name}}\\nExam Type: {{$json.exam.exam_type}}\\nMaximum Marks: {{$json.exam.total_marks}}\\nDuration: {{$json.exam.duration}}\\nTopics: {{$json.syllabus.topics.join(', ')}}\\nLearning Outcomes: {{$json.syllabus.outcomes}}\\nDifficulty Distribution: {{$json.syllabus.difficulty}}\\nMarks Distribution: {{Object.entries($json.distribution).map(([m,d]) => m + ' marks: ' + d.questions + 'Q').join(', ')}}\\n\\n---\\n📌 Expected JSON Schema:\\n{\\n  \\\"exam\\\": {\\n    \\\"board\\\": \\\"\\\",\\n    \\\"class\\\": \\\"\\\",\\n    \\\"subject\\\": \\\"\\\",\\n    \\\"chapter\\\": \\\"\\\",\\n    \\\"school\\\": \\\"\\\",\\n    \\\"exam_type\\\": \\\"\\\",\\n    \\\"total_marks\\\": 0,\\n    \\\"duration\\\": \\\"\\\"\\n  },\\n  \\\"instructions\\\": [\\n    \\\"Answer all questions.\\\",\\n    \\\"Write neatly and legibly.\\\",\\n    \\\"Use a blue or black pen only.\\\"\\n  ],\\n  \\\"sections\\\": [\\n    {\\n      \\\"title\\\": \\\"PART A → 1 Mark Questions (17 Questions = 17 Marks)\\\",\\n      \\\"questions\\\": [\\\"...\\\"]\\n    },\\n    {\\n      \\\"title\\\": \\\"PART B → 2 Marks Questions (2 Questions = 4 Marks)\\\",\\n      \\\"questions\\\": [\\\"...\\\"]\\n    },\\n    {\\n      \\\"title\\\": \\\"PART C → 4 Marks Questions (1 Question = 4 Marks)\\\",\\n      \\\"questions\\\": [\\\"...\\\"]\\n    }\\n  ]\\n}\\n\\nRules:\\n1. Fill the JSON strictly in the schema above.\\n2. Generate relevant school-level exam questions based on subject, chapter, topics, outcomes, and difficulty.\\n3. Numbering of questions is NOT required (just question text in the array).\\n4. Do not include marks inside questions (only in section title).\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.6,\n    \"maxOutputTokens\": 4096\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1168,
+        80
+      ],
+      "id": "b603dbdc-aa49-4077-acc2-4632c27df0a5",
+      "name": "Generate Questions with AI"
+    },
+    {
+      "parameters": {
+        "fromEmail": "chitturisaikiran1210@gmail.com",
+        "toEmail": "={{ $('Extract & Validate Form Data').item.json.teacher_email }}",
+        "subject": "={{ $('Extract & Validate Form Data').item.json.subject }} - {{ $('Extract & Validate Form Data').item.json.exam_type }} on chapter : {{ $('Extract & Validate Form Data').item.json.chapter }} for class {{ $('Extract & Validate Form Data').item.json.class }}\n",
+        "emailFormat": "text",
+        "text": "=Dear Teacher,\n\nPlease find the attached {{ $('Extract & Validate Form Data').item.json.subject }} - {{ $('Extract & Validate Form Data').item.json.exam_type }} on chapter : {{ $('Extract & Validate Form Data').item.json.chapter }} for class {{ $('Extract & Validate Form Data').item.json.class }}\nexam paper generated by the system.\nYou can print it or make changes directly in Word.\n\nRegards,\nExam Generator System\n",
+        "options": {
+          "attachments": "=data"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1840,
+        80
+      ],
+      "id": "37b5a65d-a577-4390-8dba-2322d1f7c94a",
+      "name": "Send email",
+      "webhookId": "b16f7740-b307-4318-be33-8dae76e16f93",
+      "credentials": {
+        "smtp": {
+          "id": "DMWdFyfZewhEXhia",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1E1aU3K3a2e_q0iOgwNVZ9IVB6nChJqEJidVTNXoAP20/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Generation_Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Request_ID": "={{$node[\"Extract & Validate Form Data\"].json.request_id}}",
+            "Processing_Time": "={{$now.diff(new Date($node[\"Extract & Validate Form Data\"].json.timestamp),'seconds')}} seconds\n",
+            "Status": "=Completed",
+            "Email_Sent": "={{ $json.accepted }}",
+            "Language": "={{$node[\"Extract & Validate Form Data\"].json.language}}",
+            "Duration": "={{$node[\"Extract & Validate Form Data\"].json.duration}}",
+            "Total_Marks": "={{$node[\"Extract & Validate Form Data\"].json.total_marks}}",
+            "Exam_Type": "={{$node[\"Extract & Validate Form Data\"].json.exam_type}}",
+            "Chapter": "={{ $('Extract & Validate Form Data').item.json.chapter }}",
+            "Subject": "={{$node[\"Extract & Validate Form Data\"].json.subject}}",
+            "Class": "={{$node[\"Extract & Validate Form Data\"].json.class}}",
+            "Board": "={{$node[\"Extract & Validate Form Data\"].json.board}}",
+            "School_Name": "={{$node[\"Extract & Validate Form Data\"].json.school_name}}",
+            "Teacher_Email": "={{$node[\"Extract & Validate Form Data\"].json.teacher_email}}",
+            "Timestamp": "={{$node[\"Extract & Validate Form Data\"].json.timestamp}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Teacher_Email",
+              "displayName": "Teacher_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "School_Name",
+              "displayName": "School_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Board",
+              "displayName": "Board",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Class",
+              "displayName": "Class",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Chapter",
+              "displayName": "Chapter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Exam_Type",
+              "displayName": "Exam_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total_Marks",
+              "displayName": "Total_Marks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration",
+              "displayName": "Duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Language",
+              "displayName": "Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Questions_Generated",
+              "displayName": "Questions_Generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Exam_Paper_Link",
+              "displayName": "Exam_Paper_Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Answer_Key_Link",
+              "displayName": "Answer_Key_Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "WhatsApp_Sent",
+              "displayName": "WhatsApp_Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Email_Sent",
+              "displayName": "Email_Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processing_Time",
+              "displayName": "Processing_Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request_ID",
+              "displayName": "Request_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI_Fallback_Used",
+              "displayName": "AI_Fallback_Used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2064,
+        80
+      ],
+      "id": "ba2332f3-68e1-4b59-81c7-1cdec863bdd8",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract JSON text from AI output\nlet aiText = $json.candidates[0].content.parts[0].text.trim();\n\n// Remove ```json ... ``` if present\naiText = aiText.replace(/^```json/, \"\").replace(/```$/, \"\").trim();\n\n// Parse into JSON\nlet examData = JSON.parse(aiText);\n\n// Build Word-compatible HTML\nlet html = `\n<html>\n<head>\n  <style>\n    body { font-family: 'Times New Roman', serif; line-height: 1.6; font-size: 12pt; }\n    h1, h2 { text-align: center; }\n    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }\n    td { padding: 4px; vertical-align: top; }\n    .instructions { margin: 10px 0; }\n    .section { margin: 15px 0; }\n    .section-title { font-weight: bold; margin: 10px 0; }\n  </style>\n</head>\n<body>\n  <h1>${examData.exam.board}</h1>\n  <h2>${examData.exam.subject}</h2>\n\n  <table border=\"1\">\n    <tr>\n      <td><b>Class:</b> ${examData.exam.class}</td>\n      <td><b>Chapter:</b> ${examData.exam.chapter}</td>\n    </tr>\n    <tr>\n      <td><b>School:</b> ${examData.exam.school}</td>\n      <td><b>Exam Type:</b> ${examData.exam.exam_type}</td>\n    </tr>\n    <tr>\n      <td><b>Maximum Marks:</b> ${examData.exam.total_marks}</td>\n      <td><b>Duration:</b> ${examData.exam.duration} minutes</td>\n    </tr>\n  </table>\n\n  <h2>QUESTION PAPER</h2>\n\n  <div class=\"instructions\">\n    <b>Instructions:</b>\n    <ol>\n      ${examData.instructions.map(i => `<li>${i}</li>`).join(\"\")}\n    </ol>\n  </div>\n\n  ${examData.sections.map(section => `\n    <div class=\"section\">\n      <p class=\"section-title\">${section.title}</p>\n      ${section.questions.map((q, idx) => `<p>${idx + 1}. ${q}</p>`).join(\"\")}\n    </div>\n  `).join(\"\")}\n</body>\n</html>\n`;\n\n// Return to next node\nreturn {\n  json: {\n    html: html\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        80
+      ],
+      "id": "65123767-7c14-485d-a141-79f0513a167d",
+      "name": "Question Paper Template"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Access values from the \"Extract & Validate Form Data\" node\nconst formData = $node[\"Extract & Validate Form Data\"].json;\n// Access values safely\nconst exam = formData.exam || formData;\n\nlet rawHtml = $json.html;\n\n// Remove duplicate headers (keep only sections & instructions)\nrawHtml = rawHtml.replace(/<h1[\\s\\S]*?<\\/table>/i, \"\"); \nrawHtml = rawHtml.replace(/<h2>QUESTION PAPER<\\/h2>/i, \"\");\n\n// Ensure PART A/B/C titles are bold if not styled by AI\nrawHtml = rawHtml.replace(/<p>(PART [A-Z][\\s\\S]*?)<\\/p>/gi, \"<p class='section-title'>$1</p>\");\n\n// Master compact template\nconst htmlTemplate = `\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body {\n      font-family: 'Times New Roman', serif;\n      margin: 0.7cm;\n      font-size: 11pt;\n      line-height: 1.1;\n      color: #000;\n    }\n    h1, h2 {\n      text-align: center;\n      margin: 0.1cm 0;\n    }\n    h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; }\n    h2 { font-size: 12pt; font-weight: bold; }\n\n    table {\n      width: 100%;\n      border-collapse: collapse;\n      margin: 0.2cm 0;\n      font-size: 10.5pt;\n    }\n    td {\n      border: 1px solid #000;\n      padding: 2px 4px;\n      vertical-align: top;\n      width: 50%;\n    }\n    td b { display: inline-block; width: 40%; }\n\n    .divider {\n      border-top: 1px solid #000;\n      margin: 0.15cm 0;\n    }\n    .qp-title {\n      text-align: center;\n      font-weight: bold;\n      font-size: 12pt;\n      margin: 0.1cm 0;\n      letter-spacing: 0.3px;\n    }\n    .section-title {\n      font-weight: bold;\n      margin: 0.08cm 0;\n      text-decoration: underline;\n    }\n    ol { padding-left: 0.6cm; margin: 0; }\n    p { margin: 0.03cm 0; }\n\n    /* Single A4 page control */\n    @page {\n      size: A4;\n      margin: 1cm;\n    }\n  </style>\n</head>\n<body>\n\n  <h1>${exam.school_name.toUpperCase()}</h1>\n  <h2>${exam.board}</h2>\n\n  <table>\n    <tr>\n      <td><b>Class:</b> ${exam.class}</td>\n      <td><b>Chapter:</b> ${exam.chapter}</td>\n    </tr>\n    <tr>\n      <td><b>Subject:</b> ${exam.subject}</td>\n      <td><b>Exam Type:</b> ${exam.exam_type}</td>\n    </tr>\n    <tr>\n      <td><b>Maximum Marks:</b> ${exam.total_marks}</td>\n      <td><b>Duration:</b> ${exam.duration} minutes</td>\n    </tr>\n  </table>\n\n  <div class=\"divider\"></div>\n  <div class=\"qp-title\">QUESTION PAPER</div>\n  <div class=\"divider\"></div>\n\n  ${rawHtml}\n\n</body>\n</html>\n`;\n\n// Generate clean filename\nconst fileName = `${exam.subject} - ${exam.exam_type} - Class ${exam.class} - ${exam.chapter}.doc`;\n\nreturn {\n  json: {},\n  binary: {\n    data: {\n      data: Buffer.from(htmlTemplate, \"utf-8\"),\n      fileName: fileName,\n      mimeType: \"application/msword\"\n    }\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        80
+      ],
+      "id": "12e809a5-bb22-49a3-9659-0a7be9956266",
+      "name": "Generate Doc File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Form Submission Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract & Validate Form Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Validate Form Data": {
+      "main": [
+        [
+          {
+            "node": "Lookup Chapter Syllabus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Chapter Syllabus": {
+      "main": [
+        [
+          {
+            "node": "Get Board Marks Pattern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Board Marks Pattern": {
+      "main": [
+        [
+          {
+            "node": "Code (Calculate Question Distribution)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (Calculate Question Distribution)": {
+      "main": [
+        [
+          {
+            "node": "Generate Questions with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Questions with AI": {
+      "main": [
+        [
+          {
+            "node": "Question Paper Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Paper Template": {
+      "main": [
+        [
+          {
+            "node": "Generate Doc File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Doc File": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "eedf3766-2dab-41a9-a588-ead745b0b657",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "836d452b71db3829eea43fbd2c84e8447de4e22cdc408abba50a22184b843baf"
+  },
+  "id": "LI0M2orl495CYCHC",
+  "tags": []
+}

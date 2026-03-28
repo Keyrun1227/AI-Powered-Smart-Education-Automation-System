@@ -1,0 +1,660 @@
+{
+  "name": "Daily Parent Updates",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "761f5243-a684-43da-9b7d-5d8c32373138",
+      "name": "Schedule Trigger - Daily 6 PM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -848,
+        240
+      ],
+      "webhookId": "schedule_daily_updates"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "23281791-6075-432a-be76-4c8cd736c1da",
+              "name": "today_date",
+              "value": "={{ new Date().toISOString().split('T')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "845651d6-b4b0-4671-a188-ceb05f014e38",
+              "name": "sheet_id",
+              "value": "1BbtJHzYJc5yWtVMcWv9bGg3aPuFu-49p7t4q42Fa9Ts",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "630d6cab-e61b-4d75-a24e-0ae21d7bea7b",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -624,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node['Set Variables'].json.sheet_id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Student Database",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "3f59144a-f3bd-4ce7-9c12-4f40b8848409",
+      "name": "Get Active Students",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -384,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "filter_active_students",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "Active",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8479806c-0720-40d9-ae27-b26e664fa58a",
+      "name": "Filter Active Students Only",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "343e6459-ebca-4d73-8844-aaaec903aa7c",
+      "name": "Process One Student at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        48,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "=1BbtJHzYJc5yWtVMcWv9bGg3aPuFu-49p7t4q42Fa9Ts",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Daily Attendance",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Date",
+              "lookupValue": "={{ $node['Set Variables'].json.today_date }}"
+            },
+            {
+              "lookupColumn": "Student ID",
+              "lookupValue": "={{ $node['Process One Student at a Time'].json['Student ID'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b75f1ae-b9c1-4553-95f9-79e6e557ea9a",
+      "name": "Get Today's Attendance",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        336,
+        -32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node['Set Variables'].json.sheet_id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1342174751,
+          "mode": "list",
+          "cachedResultName": "Homework Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BbtJHzYJc5yWtVMcWv9bGg3aPuFu-49p7t4q42Fa9Ts/edit#gid=1342174751"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Date Assigned",
+              "lookupValue": "={{ $node['Set Variables'].json.today_date }}"
+            },
+            {
+              "lookupColumn": "Student ID",
+              "lookupValue": "={{ $node['Process One Student at a Time'].json['Student ID'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1450363-0058-4df6-acfe-193d8619320b",
+      "name": "Get Today's Homework",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        160
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node['Set Variables'].json.sheet_id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Recent Grades",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Student ID",
+              "lookupValue": "={{ $node['Process One Student at a Time'].json['Student ID'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ca2b3cdf-e9dd-45e3-aba2-39d2682b0949",
+      "name": "Get Recent Grades (Last 7 Days)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w8qH6ddud43EuHzJ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "85810db7-4f2f-4b31-9e0d-2cbce3969934",
+              "name": "student_data",
+              "value": "={{ JSON.stringify($node['Process One Student at a Time'].json) }}",
+              "type": "string"
+            },
+            {
+              "id": "0c79d5df-39be-43cd-ba29-59a97384250e",
+              "name": "attendance_data",
+              "value": "={{ JSON.stringify($node[\"Get Today's Attendance\"].json || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "3d1fe479-e4aa-4b43-bf11-05bb9d207f33",
+              "name": "homework_data",
+              "value": "={{ JSON.stringify($node[\"Get Today's Homework\"].json || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "5e75aa91-2bef-4f08-9235-d3c8d474236c",
+              "name": "Grades Data",
+              "value": "={{ JSON.stringify($node[\"Get Recent Grades (Last 7 Days)\"].json || []) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "5627c73d-3b48-45de-beb3-840962bc3524",
+      "name": "Combine All Student Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        912,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyAQ-An8W8O6kVpPZnmmvR-NCe67H-f5mKg",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{\n  \"parts\": [{\n    \"text\": `You are an AI assistant for a private school. Create a personalized daily update message for parents.\n\nStudent Information:\n${JSON.parse($node['Combine All Student Data'].json.student_data)['Student Name']} (${JSON.parse($node['Combine All Student Data'].json.student_data)['Class']}-${JSON.parse($node['Combine All Student Data'].json.student_data)['Section']})\nParent: ${JSON.parse($node['Combine All Student Data'].json.student_data)['Parent Name']}\n\nToday's Attendance:\n${JSON.parse($node['Combine All Student Data'].json.attendance_data).length > 0 ? \n  'Status: ' + JSON.parse($node['Combine All Student Data'].json.attendance_data)[0]['Status'] + \n  (JSON.parse($node['Combine All Student Data'].json.attendance_data)[0]['Remarks'] ? \n   '\\nRemarks: ' + JSON.parse($node['Combine All Student Data'].json.attendance_data)[0]['Remarks'] : '') \n  : 'No attendance data available'}\n\nToday's Homework:\n${JSON.parse($node['Combine All Student Data'].json.homework_data).length > 0 ? \n  JSON.parse($node['Combine All Student Data'].json.homework_data).map(hw => \n    hw.Subject + ': ' + hw['Assignment Title'] + ' (' + hw.Status + ')'\n  ).join('\\n') \n  : 'No homework assigned today'}\n\nRecent Grades (Last 7 Days):\n${JSON.parse($node['Combine All Student Data'].json.grades_data).length > 0 ? \n  JSON.parse($node['Combine All Student Data'].json.grades_data).slice(0, 3).map(grade => \n    grade.Date + ' - ' + grade.Subject + ': ' + grade['Assessment Name'] + ' - ' + grade['Marks Obtained'] + '/' + grade['Total Marks'] + ' (' + grade.Grade + ')'\n  ).join('\\n') \n  : 'No recent grades to report'}\n\nInstructions:\n1. Address the parent by name warmly\n2. Start with student's name and class\n3. Present attendance status clearly (use ✅ for Present, ❌ for Absent, ⏰ for Late)\n4. List homework with status (✅ Submitted, ⏳ Pending, ❌ Late)\n5. Highlight recent good grades with praise\n6. Keep message under 250 words\n7. Use appropriate emojis but don't overdo it\n8. End with school contact info\n9. Professional yet warm tone\n10. If no significant updates, create a brief positive message\n\nSchool Name: Bright Future Academy\nContact: +91-XXXXXXXXXX | info@brightfuture.edu`\n  }]\n}]) }}",
+        "options": {}
+      },
+      "id": "1c53543e-73f5-4613-a4b4-ae3ef16236ce",
+      "name": "Generate AI Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1056,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ec472c2c-1d66-451a-beeb-9ecc50942aa6",
+      "name": "Format Message for WhatsApp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1136,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/YOUR_PHONE_NUMBER_ID/messages",
+        "authentication": "predefinedCredential",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WHATSAPP_ACCESS_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $node['Format Message for WhatsApp'].json.parent_phone }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={{ JSON.stringify({\"body\": $node['Format Message for WhatsApp'].json.ai_message}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "745eaec0-3f10-43b2-aac1-718474e05adb",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        240
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fromEmail": "school@brightfuture.edu",
+        "toEmail": "={{ $node['Format Message for WhatsApp'].json.parent_email }}",
+        "subject": "Daily Update - {{ $node['Format Message for WhatsApp'].json.student_name }}",
+        "options": {}
+      },
+      "id": "722f571d-7381-4052-afca-08c362a54bae",
+      "name": "Send Backup Email (If WhatsApp Fails)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1584,
+        432
+      ],
+      "webhookId": "18444b4c-c039-454b-8eca-83cd55a88246"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "={{ $node['Set Variables'].json.sheet_id }}",
+        "sheetName": "Communication Log",
+        "options": {}
+      },
+      "id": "41aa171a-ca4a-41f7-81f0-959493c64acf",
+      "name": "Log Communication Result",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        1808,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "99fe02d0-e4be-4907-bce8-bd3287edbe87",
+      "name": "Check If All Students Processed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2032,
+        408
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "['Student ID']",
+        "options": {
+          "multipleMatches": "all"
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        544,
+        16
+      ],
+      "id": "fe4519b4-e4fd-4f7b-96a3-7afa050f5d87",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "['Student ID']",
+        "options": {
+          "multipleMatches": "all"
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "e5996079-977b-4325-ba9d-14fdff2c7d00",
+      "name": "Merge1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger - Daily 6 PM": {
+      "main": [
+        [
+          {
+            "node": "Set Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables": {
+      "main": [
+        [
+          {
+            "node": "Get Active Students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Students": {
+      "main": [
+        [
+          {
+            "node": "Filter Active Students Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Active Students Only": {
+      "main": [
+        [
+          {
+            "node": "Process One Student at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process One Student at a Time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Today's Attendance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Today's Homework",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Recent Grades (Last 7 Days)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Attendance": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Homework": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Recent Grades (Last 7 Days)": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine All Student Data": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Message": {
+      "main": [
+        [
+          {
+            "node": "Format Message for WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message for WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Log Communication Result",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Backup Email (If WhatsApp Fails)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Backup Email (If WhatsApp Fails)": {
+      "main": [
+        [
+          {
+            "node": "Log Communication Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Communication Result": {
+      "main": [
+        [
+          {
+            "node": "Check If All Students Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If All Students Processed": {
+      "main": [
+        [
+          {
+            "node": "Process One Student at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fffa072d-1e1f-4b5a-a0f4-12189acb420e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "836d452b71db3829eea43fbd2c84e8447de4e22cdc408abba50a22184b843baf"
+  },
+  "id": "duTH4lfV5xEIaC44",
+  "tags": []
+}
